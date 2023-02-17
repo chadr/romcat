@@ -115,7 +115,10 @@ def getsize(size):
 		return(65536)
 	elif size == "128K":
 		return(131072)
-
+	elif size == "256K":
+		return(262144)
+	elif size == "512K":
+		return(524288)
 
 if __name__ == "__main__":
 	main()
