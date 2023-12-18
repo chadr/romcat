@@ -25,42 +25,33 @@ from functools import reduce
 # main function
 # this needs to be refactored
 def main():
+	print("romcat v0.2")
+	print("https://github.com/chadr/romcat")
+	print("released under MIT license, 2023")
+	print("romcat WILL NOT modify original ROM dumps!")
+	print("------------------------------------------")
+	
+	# concatenated list 
+	combinedROMS = bytearray()
+
 	# get command line arguments
 	inputROMS, targetSize = getargs()
-
-	ROMS = [] # list of ROM dumps
-	combinedROMS = bytearray() # concatenated list 
 
 	# generate base-2 value of size
 	realSize = getsize(targetSize)
 
-	# read in specified ROM files
-	print('reading ROM files...')
-	for ROM in inputROMS:
-		# see if file actually exists
-		if os.path.exists(ROM):
-			with open(ROM, "rb") as binary_file:
-				# attempt to read it
-				try:
-					ROMS.append(binary_file.read())
-					print('  reading ' + ROM + '...OK')
-				except:
-					print('  reading ' + ROM + '...FAILED')
-					sys.exit(2)
-		else:
-			print("  reading " + ROM + "...FAILED (file doesn't exist!)")
-			sys.exit(2)
+	ROMS = readromfiles(inputROMS)
 
 	# check for valie option ROMs
 	# a valid option ROM starts with bytes 0x55 0xAA
 	# as specified in the IBM PC standard
 	print('checking for valid option ROMs...')
 	for ROM, NAME in zip(ROMS, inputROMS):
-		# 0x55 0xAA
-		if ROM[0:2] == b'U\xaa':
+		# check if first two bytes of option rom are 0x55 0xAA
+		if ROM[0] == 0x55 and ROM[1] == 0xAA:
 			print('  checking ' + NAME + '...VALID')
 		else:
-			print('  checking ' + NAME + '...INVALID')
+			print('  checking ' + NAME + '...INVALID (Bad signature)')
 			sys.exit(2) 
 
 	# combine the ROMs
@@ -69,7 +60,7 @@ def main():
 		combinedROMS = combinedROMS + ROM
 
 	if len(combinedROMS) > realSize:
-		print('ERROR: combined binary too large for EPROM size')
+		print('ERROR: combined binary too large for E/EPROM size')
 		sys.exit(2)
 		
 	paddingSize = realSize - len(combinedROMS)
@@ -87,6 +78,29 @@ def main():
 	    except:
 	    	print("ERROR: couldn't write binary file")
 	    	sys.exit(2)
+
+def readromfiles(inputROMS):
+	ROMS = [] # list of ROM dumps
+
+	# read in specified ROM files
+	print('reading ROM files...')
+	for ROM in inputROMS:
+		# see if file actually exists
+		if os.path.exists(ROM):
+			# opening file via WITH ensures file is automatically closed after reading
+			with open(ROM, "rb") as binary_file:
+				# attempt to read it
+				try:
+					ROMS.append(binary_file.read())
+					print('  reading ' + ROM + '...OK')
+				except:
+					print('  reading ' + ROM + '...FAILED')
+					sys.exit(2)
+		else:
+			print("  reading " + ROM + "...FAILED (file doesn't exist!)")
+			sys.exit(2)
+
+	return(ROMS)
 
 def getargs():
 	parser = argparse.ArgumentParser(description = 'Combines option ROMs and generates correct padding size.')
